@@ -1,0 +1,16 @@
+http란?
+통신 의사소통을 위한 규약
+
+요청
+Method: GET, POST 등 추상화
+
+Headers: 요청사항(보소 -> 필수)
+
+응답
+Status message만 추가로 있음
+
+서버
+요청에 맞는 응답을 구성해 클라이언트에게 전해주는 역할
+
+
+rest api?

@@ -1,0 +1,171 @@
+https://ttl-blog.tistory.com/334?category=910686#CommentSaveDto%25--%EC%25--%25-D%EC%25--%25B-
+좋은 예시
+
+제네릭스? AOP(ex Transactional은 AOP이다.)?
+
+cors, Transaction acid
+
+@Transactional   ***
+수정에 이용되는 어노테이션 들어가면 save를 넣어 사용할 필요가 없다. 알아서 수정사항을 커밋해줌
+한 클래스를 진행하다 문제 발생시 롤백됨(없으면 그냥 진행됨)
+문제가 없을시 내용을 커밋해준다.
+
+----------------------------------------댓글, 대댓글 오류----------------------------------------
+상황
+	댓글 작성 (정상)
+	댓글 확인 (정상)
+	대댓글 작성 (정상)
+	대댓글 확인 (에러)
+	대댓글 리스트를 받아올 contentsList에 참조값이 출력됨 --- 왜 리스트를 참조로?
+
+리스트를 참조할 수 있는 경우를 찾아 봤지만 찾을 수 없었다.
+
+오류내용
+HttpMessageNotWritableException: --- 반환된 객체의 속성을 가져오지 못할 때 발생 -> 기본 생성자, 게터, 잭슨 종속성 				등을 확인한다 -> 생성자나 게터는 존재하고 잭슨 종속성은 몰라서 일단 패스
+StackOverflowError --- ArrayList에 초과되는 양의 data가 쌓이면 StackOverflowError 가 발생할 수 있다지만 테스트에서 		많은 양의 data를 담지 않았다. -> 무한루프에 의한 데이터 대량 발생? -> 매핑에 의해서 가능하다고 함
+
+위 두 코드 모두 매핑에 의한 오류의 가능성이 있다.
+
+우리와 같은 상황의 예시를 든 블로그를 발견 @JsonManagedReference, @JsonBackReference 어노테이션으로 정상적인 테이블 값이 나오도록 만들었다.
+
+- 블로그 참조 -
+https://pasudo123.tistory.com/350
+
+- 문제 코드 -
+@OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+   private final List<Contents> contentsList = new ArrayList<>();
+
+-----마이페이지 구현-----
+
+구성
+로그인 회원이 작성한 게시글, 댓글/대댓글, 좋아요한 게시글/댓글
+분류하여 response
+
+해석
+(게시글) (댓글/대댓글) (좋아요한 게시글/댓글) 이렇게 분류
+
+정리
+1. 작성한 게시글을 가져오는 기능 구현
+2. 작성한 댓글들을 가져오는 기능 구현
+3. 좋아요 한 글들 가져오는 기능 구현
+<특정 유저의 값을 어떻게 가져오느냐??> 
+
+https://kimfk567.tistory.com/69 --- 가장 원하는 내용과 유사하지만 Mapper를 이용한 방법이라 부적절
+https://doublesprogramming.tistory.com/99 --- 회원 권한 부여 검색
+
+
+https://okky.kr/article/1199624
+
+-----------------------------------------------------------------------------------------------
+
+----게시글과 댓글 좋아요 개수 표시(전체게시글 목록 조회?)------
+
+
+- 구성
+	1. AccessToken 없이도 좋아요 개수 조회 가능
+
+	2. 조회하는 게시글 리스트에 작성된 모든 좋아요 개수를 게시글
+	리스트 response에 포함하기
+
+	3. 조회하는 각 게시글에 작성된 모든 좋아요 개수를 게시글
+	리스트 response에 포함하기        /////api 고유값 필요함
+
+	4. 조회하는 각 댓글/대댓글에 작성된 모든 좋아요 개수를
+	댓글 리스트 response에 포함하기
+
+- 해석
+	조회하는 내용(게시글 리스트, 게시글, 댓글/대댓글)의 작성된 모든 좋아요 개수를 포함
+
+
+- 문제발생
+게시글을 만들어 불러오는 기능을 보려했는데 게시글 작성 api가 작동하지 않는 상황 발생
+다른 두 팀원들은 같은 브렌치로 시도해도 기능함(코드 문제가 아니라 intellij의 문제라고 판단)
+IDE복구, 디폴트 설정복구, Git 설정 가져오기,캐시 무효화 등으로 8시간정도 붙잡은 결과 매개변수 boardDto에 @Notnull을 삽입한 이후 에러값에 변화가 생김
+Servlet의 문제로 에러메세지 출력
+
+"Query에 Null 값이 들어갔을 경우 발생하는 문제입니다.
+해결 방법
+1. Controller, DAO, Service 단에서 각각에 넘겨주는 쿼리값의 주입이 됐는지 확인
+2. DB가 run 중인지 확인"
+
+
+https://dev-coco.tistory.com/93
+-----------------------------------------------------------------------------------------------
+
+---Scheduler---
+
+- 구성
+	1. 매일 새벽 1시에 사용되고 있지 않은 이미지를 S3에서 삭제되도록 스케줄러 만들기
+
+- 증명?
+	여러 이미지를 S3에 넣어두고 게시물들에 일부 사용 후 기준시간 변경으로 확인 가능
+
+- 이해 해보자
+
+-------------------------------------------Scheduler 클래스------------------------------------------------------
+	// 초, 분, 시, 일, 월, 주 순서
+    @Scheduled(cron = "0 0 1 * * *")
+
+			   // 오류시 오류를 띄워라
+    public void updatePrice()     throws InterruptedException {
+        System.out.println("가격 업데이트 실행");
+
+        // 저장된 모든 관심상품을 조회합니다.
+        List<Product> productList = productRepository.findAll();    // 필요한 정보만 가져가지 왜 product 전체가 필요함?
+        for (int i=0; i<productList.size(); i++) {			 : 모든정보에서 뽑아쓰는게 편함 (title 추출, id추출 등)
+
+            // 1초에 한 상품 씩 조회(for문 실행)합니다 (Naver 시간제한때문)
+            TimeUnit.SECONDS.sleep(1);
+
+            // i 번째 관심 상품을 꺼냅니다.
+            Product p = productList.get(i);
+
+            // i 번째 관심 상품의 제목으로 검색을 실행합니다.
+            String title = p.getTitle(); // 제목 추출
+            String resultString = naverShopSearch.search(title);  // 제목으로 검색 실행 resultString에 저장
+
+            // i 번째 관심 상품의 검색 결과 목록 중에서 첫 번째 결과를 꺼냅니다.
+            List<ItemDto> itemDtoList = naverShopSearch.fromJSONtoItems(resultString);  //네이버에서 제목으로 검색
+            ItemDto itemDto = itemDtoList.get(0);  // 유사성이 제일 높은 0번 정보 추출
+
+            // i 번째 관심 상품 정보를 업데이트합니다.
+            Long id = p.getId();	// 갱신하려는 i번의 id를 추출
+            productService.updateBySearch(id, itemDto); //productService의 updateBySearch라는 함수는 id값을 지표로 itemDto를 갱신시킨다.
+        }	
+    }
+
+-------------------------------------------------ProductService--------------------------------------------------------------
+위의 id값을 지표로 itemDto를 갱신하는 updateBySearch 함수를 만든다.
+
+    @Transactional // 메소드 동작이 SQL 쿼리문임을 선언합니다.
+
+		 	           // id로 ItemDto를 바꾼다.
+        public Long updateBySearch(Long id, ItemDto itemDto) {
+
+			// Repository를 이용해 id검색
+            Product product = productRepository.findById(id).orElseThrow(
+						//만약 문제 발생시
+		//해당 아이디가 존재하지 않습니다. 라는 에러메세지 발생
+                    () -> new NullPointerException("해당 아이디가 존재하지 않습니다.")
+            );
+          // id가 존재한다는 걸 찾으면 product에 updateByItemDto메소드로 itemDto로 업데이트 
+            product.updateByItemDto(itemDto);
+		// updateByItemDto메소드 필요
+            return id;
+        }
+
+--------------------------------------------------------updateByItemDto-----------------------------------------------
+			          //itemDto를 넘겨받는다.
+public void updateByItemDto(ItemDto itemDto) {
+
+   // 최저가를 넘겨받은 값으로 변경한다.
+        this.lprice = itemDto.getLprice();
+    }
+
+------------------------------------------------------------------------------------------------------------------------------
+- 필요한 부분
+1시에 사용되고 있지 않은 이미지를 S3에서 삭제되도록 스케줄러 만들기
+
+? -> 이미지는 게시글 등록 시 함께 지정하도록 되어있음 -> 공통 cascade를 활용해 연관관계 중 상위 객체가 삭제될 경우, 하위 객체도
+모두 삭제되게 하기로 인해 이미지도 같이 사라지는게 맞지 않나?
+
